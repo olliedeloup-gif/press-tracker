@@ -4,114 +4,107 @@
 <meta charset="UTF-8">
 <title>Samsung Europe Press Release Tracker</title>
 <style>
-  body { font-family: Arial, sans-serif; margin: 40px; max-width: 1100px; }
-  h1 { margin-bottom: 10px; }
-  input[type="text"] { width: 80%; padding: 8px; font-size: 14px; }
-  button { padding: 8px 14px; font-size: 14px; margin-left: 8px; cursor: pointer; }
-  table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
-  th, td { padding: 8px; border: 1px solid #ccc; text-align: left; }
-  th { background: #f5f5f5; }
-  .live { background: #d4f8d4; }
-  .possible { background: #fff4c2; }
-  .notlive { background: #f8d4d4; }
-  .small { font-size: 12px; color: #666; margin-top: 6px; }
+    body {
+        font-family: Arial, sans-serif;
+        margin: 40px;
+        background: #f5f5f5;
+    }
+    h1 {
+        font-size: 28px;
+        margin-bottom: 10px;
+    }
+    input {
+        width: 500px;
+        padding: 10px;
+        font-size: 16px;
+    }
+    button {
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+    }
+    .market {
+        background: white;
+        padding: 12px;
+        margin-top: 10px;
+        border-radius: 6px;
+        border: 1px solid #ddd;
+    }
+    .yes { color: green; font-weight: bold; }
+    .no { color: red; font-weight: bold; }
 </style>
 </head>
 <body>
 
 <h1>Samsung Europe Press Release Tracker</h1>
-<p>Paste a <strong>global</strong> Samsung News link and click “Check Status”.</p>
+<p>Paste a global Samsung News link and click "Check Status".</p>
 
-<input id="hqLink" type="text" placeholder="https://news.samsung.com/global/...">
-<button onclick="checkMarkets()">Check Status</button>
+<input id="hqLink" placeholder="https://news.samsung.com/global/...">
+<button onclick="checkAllMarkets()">Check Status</button>
 
-<div id="status" class="small"></div>
 <div id="results"></div>
 
 <script>
-// --- Market list ---
-const markets = [
-  { code: "SEUK", name: "UK", url: "https://news.samsung.com/uk/" },
-  { code: "SEG", name: "Germany", url: "https://news.samsung.com/de/" },
-  { code: "SEF", name: "France", url: "https://news.samsung.com/fr/" },
-  { code: "SEIB-S", name: "Spain", url: "https://news.samsung.com/es/" },
-  { code: "SEI", name: "Italy", url: "https://news.samsung.com/it/" },
-  { code: "SEBN-N", name: "Netherlands", url: "https://news.samsung.com/nl" },
-  { code: "SEBN-B", name: "Belgium", url: "https://news.samsung.com/be/" },
-  { code: "SENA-SE", name: "Sweden", url: "https://news.samsung.com/se/" },
-  { code: "SENA-NO", name: "Norway", url: "https://news.samsung.com/no/" },
-  { code: "SEAS-AT", name: "Austria", url: "https://news.samsung.com/at" },
-  { code: "SEAS-CH-DE", name: "Switzerland (DE)", url: "https://news.samsung.com/ch/" },
-  { code: "SEAS-CH-FR", name: "Switzerland (FR)", url: "https://news.samsung.com/ch_fr/" },
-  { code: "SEAD-BA", name: "Bosnia & Herzegovina", url: "https://www.samsung.com/ba/news/" },
-  { code: "SEAD-HR", name: "Croatia", url: "https://www.samsung.com/hr/news/" },
-  { code: "SEAD-MK", name: "North Macedonia", url: "https://www.samsung.com/mk/news/" },
-  { code: "SEAD-AL", name: "Albania", url: "https://www.samsung.com/al/news/" },
-  { code: "SEAD-RS", name: "Serbia", url: "https://www.samsung.com/rs/news/" },
-  { code: "SEAD-SI", name: "Slovenia", url: "https://www.samsung.com/si/news/" },
-  { code: "SEB-LV", name: "Latvia", url: "https://www.samsung.com/lv/news/" },
-  { code: "SEB-LT", name: "Lithuania", url: "https://www.samsung.com/lt/news/" },
-  { code: "SEB-EE", name: "Estonia", url: "https://www.samsung.com/ee/news/" },
-  { code: "SEGR", name: "Greece", url: "https://www.samsung.com/gr/news/" },
-  { code: "SECZ", name: "Czech", url: "https://news.samsung.com/cz/" },
-  { code: "SEH", name: "Hungary", url: "https://www.samsung.com/hu/news/" },
-  { code: "SEPOL", name: "Poland", url: "https://news.samsung.com/pl/" },
-  { code: "SEROM-RO", name: "Romania", url: "https://news.samsung.com/ro/" },
-  { code: "SEUC", name: "Ukraine", url: "https://news.samsung.com/ua/" }
-];
-
-// --- NEW WORKING CORS PROXY ---
-const PROXY = "https://cors.isomorphic-git.org/";
-
-function logStatus(msg) {
-  document.getElementById("status").innerText = msg;
-}
+const markets = {
+    "UK": "https://news.samsung.com/uk/",
+    "Germany": "https://news.samsung.com/de/",
+    "France": "https://news.samsung.com/fr/",
+    "Italy": "https://news.samsung.com/it/",
+    "Spain": "https://news.samsung.com/es/",
+    "Netherlands": "https://news.samsung.com/nl/",
+    "Belgium": "https://news.samsung.com/be/",
+    "Sweden": "https://news.samsung.com/se/",
+    "Norway": "https://news.samsung.com/no/",
+    "Denmark": "https://news.samsung.com/dk/",
+    "Finland": "https://news.samsung.com/fi/",
+    "Poland": "https://news.samsung.com/pl/"
+};
 
 async function fetchHTML(url) {
-  const response = await fetch(PROXY + url);
-  return await response.text();
+    try {
+        const response = await fetch(url);
+        if (!response.ok) return null;
+        return await response.text();
+    } catch {
+        return null;
+    }
 }
 
-async function checkMarkets() {
-  const hqUrl = document.getElementById("hqLink").value.trim();
-  const resultsDiv = document.getElementById("results");
-  resultsDiv.innerHTML = "";
+async function checkMarket(marketName, baseUrl, slug) {
+    const fullUrl = baseUrl + slug + "/";
+    const html = await fetchHTML(fullUrl);
 
-  if (!hqUrl) {
-    alert("Please paste a global Samsung News URL first.");
-    return;
-  }
+    if (!html) {
+        return `<div class="market"><strong>${marketName}:</strong> <span class="no">Not Published</span></div>`;
+    }
 
-  logStatus("Fetching global article…");
+    const found = html.includes(slug);
+    return `<div class="market"><strong>${marketName}:</strong> ${
+        found ? `<span class="yes">Published</span>` : `<span class="no">Not Published</span>`
+    }</div>`;
+}
 
-  let hqHtml;
-  try {
-    hqHtml = await fetchHTML(hqUrl);
-  } catch {
-    logStatus("Error fetching global article.");
-    return;
-  }
+async function checkAllMarkets() {
+    const hqUrl = document.getElementById("hqLink").value.trim();
+    if (!hqUrl.includes("news.samsung.com")) {
+        alert("Please enter a valid Samsung News link");
+        return;
+    }
 
-  const hqDoc = new DOMParser().parseFromString(hqHtml, "text/html");
-  const ogTitle = hqDoc.querySelector('meta[property="og:title"]')?.content;
-  const pageTitle = hqDoc.querySelector("title")?.innerText;
-  const title = (ogTitle || pageTitle || "").trim();
+    const slug = hqUrl.split("/").filter(Boolean).pop();
 
-  const hqKeywords = extractKeywords(title);
-  const slug = hqUrl.split("/").filter(Boolean).pop();
+    document.getElementById("results").innerHTML = "<p>Checking markets...</p>";
 
-  logStatus(`Global title: "${title}"`);
+    let output = "";
+    for (const [market, url] of Object.entries(markets)) {
+        const result = await checkMarket(market, url, slug);
+        output += result;
+    }
 
-  let table = `
-    <table>
-      <tr>
-        <th>Code</th>
-        <th>Market</th>
-        <th>Status</th>
-        <th>Confidence</th>
-        <th>Link</th>
-      </tr>
-  `;
+    document.getElementById("results").innerHTML = output;
+}
+</script>
 
-  for (const m of markets) {
-    const result = await checkMarket
+</body>
+</html>
+
